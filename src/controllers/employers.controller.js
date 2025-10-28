@@ -32,6 +32,17 @@ exports.registerEmployers = async (req, res) => {
     }
 }
 
+//getting employers profile
+
+//reusable
+async function findEmployerByEmail(email) {
+  const output = await employersModel.find({ email });
+  if (output.length === 0) throw new Error('Account does not exist');
+  return output;
+}
+
+exports.findEmployerByEmail = findEmployerByEmail;
+
 exports.getEmployer = async (req, res) => {
     const {
         email
@@ -59,7 +70,6 @@ exports.getEmployer = async (req, res) => {
         })
         console.log(err);
     }
-
 }
 
 
@@ -84,6 +94,8 @@ async function handleUpdateProfile(userID, updates) {
         data: updatedEmployer,
     };
 }
+
+exports.handleUpdateProfile = handleUpdateProfile;
 
 exports.updateProfile = async (req, res) => {
     try {

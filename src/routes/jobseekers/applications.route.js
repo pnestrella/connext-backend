@@ -7,8 +7,6 @@ const controller = require('../../controllers/jobseekers/applications.controller
 //get job application
 route.get('/getApplications', controller.getApplications)
 
-
-
 //getting applicant for swiping
 route.get('/getApplicants', controller.getApplicants)
 

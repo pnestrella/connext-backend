@@ -106,6 +106,8 @@ exports.getUserConversations = async (req, res) => {
           lastMessage: 1,
           updatedAt: 1,
           seekerName: "$seeker.fullName",
+          employerUID:"$employer.employerUID",
+          seekerUID:"$seeker.seekerUID",
           employerProfilePic: "$employer.profilePic",
           employerName: "$employer.companyName",
           applicationStatus: "$application.status",

@@ -26,6 +26,9 @@ const adminRoute = require('./admins/admin.route')
     //oauth
 const oauthRoute = require('./oauth/oauth.routes')
 
+    //schedules
+const schedulesRoute = require('./schedules/schedules.routes')
+
 
 
 //OTP Routes
@@ -53,6 +56,9 @@ router.use('/api/admins', adminRoute)
 
 //oauth
 router.use('/oauth', oauthRoute)
+
+//Schedules Routes
+router.use('/api/schedules',schedulesRoute)
 
 
 

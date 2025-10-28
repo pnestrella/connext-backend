@@ -77,6 +77,24 @@ const employersSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    oauth: {
+        accessToken: {
+            type: String,
+            default: null
+        },
+        refreshToken: {
+            type: String,
+            default: null
+        },
+        accessTokenExpiresAt: {
+            type: Date,
+            default: null
+        },
+        refreshTokenExpiresAt: {
+            type: Date,
+            default: null
+        },
+    },
     role: {
         type: String,
         default: "employer"
