@@ -12,6 +12,11 @@ router.get('/test', controller.googleTest)
 router.get('/google', controller.googlePopup)
 router.get('/google/callback', controller.googleCallback)
 
-//creating meeting
+//endpoints
+    //creating meeting
 router.post('/google/createMeeting', controller.createMeeting)
+    //editing meeting
+router.patch('/google/updateSchedule', controller.updateSchedule)
+
+
 module.exports = router

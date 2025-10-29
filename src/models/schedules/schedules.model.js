@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+const {
+  v4: uuidv4
+} = require('uuid');
 
 const meetingSchema = new mongoose.Schema({
   meetingUID: {
@@ -46,15 +48,21 @@ const meetingSchema = new mongoose.Schema({
   meetingLink: {
     type: String
   },
+  eventLink: {
+    type: String
+  },
+  eventUID: {
+    type: String
+  },
   type: {
     type: String,
     default: 'meeting'
   }
 }, {
-  timestamps: true 
+  timestamps: true
 });
 
-meetingSchema.pre('validate', function(next) {
+meetingSchema.pre('validate', function (next) {
   if (!this.meetingUID) {
     this.meetingUID = uuidv4();
   }

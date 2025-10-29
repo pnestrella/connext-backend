@@ -39,6 +39,79 @@ exports.createSchedule = async (req, res) => {
     }
 };
 
+
+//editing schedule
+  //reusable editing schedule
+async function updateScheduleFunction(meetingUID, updates) {
+  try {
+    console.log("🔧 Updating schedule by meetingUID:", meetingUID, updates);
+
+    // Find the schedule by meetingUID and update it
+    const updatedSchedule = await schedulesModel.findOneAndUpdate(
+      { meetingUID: meetingUID },
+      { $set: updates },
+      { new: true }
+    );
+
+    if (!updatedSchedule) {
+      throw new Error('Schedule not found');
+    }
+
+    return {
+      success: true,
+      message: 'Schedule updated successfully',
+      data: updatedSchedule,
+    };
+  } catch (err) {
+    console.error('❌ Error updating schedule:', err);
+    return {
+      success: false,
+      message: err.message || 'Unknown error while updating schedule',
+    };
+  }
+}
+
+
+exports.updateScheduleFunction = updateScheduleFunction;
+
+exports.updateSchedule = async (req, res) => {
+  try {
+    const { id } = req.params; // The schedule _id (MongoDB ID)
+    const updates = req.body;  // Fields to update
+
+    console.log("Updating schedule:", id, updates);
+
+    // ✅ Find and update (only the provided fields)
+    const updatedSchedule = await schedulesModel.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true } // returns the updated document
+    );
+
+    if (!updatedSchedule) {
+      return res.status(404).json({
+        success: false,
+        message: 'Schedule not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Schedule updated successfully',
+      data: updatedSchedule,
+    });
+  } catch (err) {
+    console.error('Error updating schedule:', err);
+    res.status(400).json({
+      success: false,
+      error: err.message || err,
+    });
+  }
+};
+
+
+
+//getting schedules by conversations
 exports.getSchedulesByConversation = async (req, res) => {
     try {
         console.log("Meow");

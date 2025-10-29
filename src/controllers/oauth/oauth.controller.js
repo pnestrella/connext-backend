@@ -5,6 +5,10 @@ const {
   findEmployerByEmail
 } = require('../employers.controller');
 
+const {
+  updateScheduleFunction
+} = require('../schedules/schedules.controller');
+
 
 
 const {
@@ -140,8 +144,14 @@ async function refreshAccessToken(refreshToken) {
 
 
 exports.createMeeting = async (req, res) => {
-  console.log(req.body,'AAAAAAAAAA');
-  const {summary, description, start, end, conferenceData} = req.body
+  console.log(req.body, 'AAAAAAAAAA');
+  const {
+    summary,
+    description,
+    start,
+    end,
+    conferenceData
+  } = req.body
 
   let employer = await findEmployerByEmail('connext.devs@gmail.com');
   employer = employer[0]
@@ -156,8 +166,7 @@ exports.createMeeting = async (req, res) => {
 
   //if ACCESS TOKEN is expired automatically get one
   try {
-  // if (new Date() >= new Date(atExp)) {
-  if(true){
+    if (new Date() >= new Date(atExp)) {
       console.log('Access token expired — refreshing...');
       const credentials = await refreshAccessToken(refreshToken);
       console.log('Access token refreshed automatically.');
@@ -181,7 +190,7 @@ exports.createMeeting = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Refresh token invalid or expired — please re-authenticate with Google.',
-        code:"REFRESH_TOKEN_EXPIRED"
+        code: "REFRESH_TOKEN_EXPIRED"
       });
     } else {
       console.error('Failed to refresh access token:', err.message);
@@ -214,7 +223,7 @@ exports.createMeeting = async (req, res) => {
     },
     end: {
       dateTime: end.dateTime,
-      timeZone: 'Asia/Manila', 
+      timeZone: 'Asia/Manila',
     },
     conferenceData: {
       createRequest: {
@@ -225,9 +234,6 @@ exports.createMeeting = async (req, res) => {
       }
     }
   };
-
-
-
   try {
     const response = await calendar.events.insert({
       calendarId: 'primary',
@@ -236,6 +242,7 @@ exports.createMeeting = async (req, res) => {
     });
     res.json({
       message: 'Meeting created!',
+      eventUID: response.data.id,
       eventLink: response.data.htmlLink,
       hangoutLink: response.data.conferenceData.entryPoints[0].uri, // Google Meet URL
     });
@@ -244,6 +251,124 @@ exports.createMeeting = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error
+    });
+  }
+};
+
+
+//edit meeting
+exports.updateSchedule = async (req, res) => {
+  const {
+    eventUID,
+    summary,
+    description,
+    start,
+    end,
+    meetingUID
+  } = req.body;
+
+  if (!eventUID) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing eventUID'
+    });
+  }
+
+  let employer = await findEmployerByEmail('connext.devs@gmail.com');
+  employer = employer[0];
+  let accessToken = decrypt(employer.oauth.accessToken);
+  let refreshToken = decrypt(employer.oauth.refreshToken);
+  const atExp = employer.oauth.accessTokenExpiresAt;
+  const rtExp = employer.oauth.refreshTokenExpiresAt;
+
+  // refresh access token if expired
+  try {
+    if (true) {
+      // if (new Date() >= new Date(atExp)) {
+      console.log('Access token expired — refreshing...');
+      const credentials = await refreshAccessToken(refreshToken);
+      accessToken = credentials.access_token;
+
+      await handleUpdateProfile(employer.employerUID, {
+        oauth: {
+          ...employer.oauth,
+          accessToken: encrypt(accessToken),
+          accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000),
+        },
+      });
+    }
+  } catch (err) {
+    if (err.message === 'invalid_grant' || err.message.includes('re-authenticate')) {
+      console.error('Refresh token invalid or expired — user needs to re-authenticate');
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token invalid or expired — please re-authenticate with Google.',
+        code: "REFRESH_TOKEN_EXPIRED"
+      });
+    } else {
+      console.error('Failed to refresh access token:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Unexpected error while refreshing access token.',
+        error: err.message,
+      });
+    };
+  }
+
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+
+  const calendar = google.calendar({
+    version: 'v3',
+    auth: oauth2Client
+  });
+
+  try {
+    const updatedEvent = {
+      summary,
+      description,
+      start: {
+        dateTime: start.dateTime,
+        timeZone: 'Asia/Manila',
+      },
+      end: {
+        dateTime: end.dateTime,
+        timeZone: 'Asia/Manila',
+      },
+    };
+
+    const response = await calendar.events.patch({
+      calendarId: 'primary',
+      eventId: eventUID,
+      requestBody: updatedEvent,
+    });
+
+    const updatesPayload = {
+      title:summary,
+      description,
+      startTime:start.dateTime,
+      endTime:end.dateTime
+    }
+
+    console.log(updatesPayload,'AAAAAAAAAAAAARRRAAAAAA');
+
+    const upd = await updateScheduleFunction(meetingUID, updatesPayload)
+
+    res.json({
+      success: true,
+      message: 'Meeting updated successfully!',
+      eventLink: response.data.htmlLink,
+      updatedData: response.data,
+    });
+  } catch (error) {
+    console.error('Error updating meeting:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update meeting.',
+      error: error.message,
     });
   }
 };
