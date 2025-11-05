@@ -29,6 +29,9 @@ const oauthRoute = require('./oauth/oauth.routes')
     //schedules
 const schedulesRoute = require('./schedules/schedules.routes')
 
+    //notifications
+const notificationsRoute = require('./notifications/notifications.routes')
+
 
 
 //OTP Routes
@@ -59,6 +62,9 @@ router.use('/oauth', oauthRoute)
 
 //Schedules Routes
 router.use('/api/schedules',schedulesRoute)
+
+//Notifications Routes
+router.use('/api/notifications',notificationsRoute)
 
 
 

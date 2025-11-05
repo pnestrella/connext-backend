@@ -283,8 +283,8 @@ exports.updateSchedule = async (req, res) => {
 
   // refresh access token if expired
   try {
-    if (true) {
-      // if (new Date() >= new Date(atExp)) {
+    // if (true) {
+      if (new Date() >= new Date(atExp)) {
       console.log('Access token expired — refreshing...');
       const credentials = await refreshAccessToken(refreshToken);
       accessToken = credentials.access_token;

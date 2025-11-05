@@ -4,6 +4,32 @@ const {
 const {
   nanoid
 } = require('nanoid');
+const { createNotificationFunction } = require('../notifications.controller');
+
+const {getJobFunction} = require('../joblistings.controller');
+const { getIO } = require('../../sockets/chat.socket');
+
+//for notifications dynamic autogenerating title
+function generateNotificationTitle(status, employerName, jobTitle) {
+  switch (status) {
+    case "pending":
+      return `${employerName} received your application`;
+    case "viewed":
+      return `${employerName} viewed your application`;
+    case "shortlisted":
+      return `${employerName} shortlisted you for ${jobTitle}`;
+    case "contacted":
+      return `${employerName} contacted you`;
+    case "hired":
+      return `${employerName} hired you for ${jobTitle}`;
+    case "closed":
+      return `${employerName} closed the job posting for ${jobTitle}`;
+    default:
+      return `${employerName} updated your application`;
+  }
+}
+
+
 
 exports.updateApplications = async (req, res) => {
   const {
@@ -28,7 +54,39 @@ exports.updateApplications = async (req, res) => {
     );
 
 
-    console.log(result);
+    console.log(result, "resss");
+
+    const job = await getJobFunction(result.jobUID)
+    // console.log(job, "jobbb");
+
+    const title = generateNotificationTitle(
+      result.status,
+      job.employerInfo.companyName,
+      job.jobTitle
+    )
+
+    const notifPayload = {
+      receiverUID: result.seekerUID,
+      senderUID: result.employerUID,
+      title,
+      message: `Your application status for "${job.jobTitle}" is now "${result.status}".`,
+      type: `application_${result.status}`,
+      data: {
+        applicationID:result.applicationID
+      },
+      receiverRole: "jobseeker",
+    };
+
+    console.log('notifpayload', notifPayload);
+
+    //getting the io 
+    const io = getIO();
+
+    const notif = await createNotificationFunction({
+      ...notifPayload,
+      io
+    });
+    console.log(notif, "notiffffff");
 
     res.status(200).json({
       success: true,

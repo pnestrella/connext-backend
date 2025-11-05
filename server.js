@@ -17,7 +17,8 @@ const io = new Server(server, {
 });
 
 
-require("./src/sockets/chat.socket")(io);
+const {chatSocket} = require("./src/sockets/chat.socket");
+chatSocket(io);
 
 server.listen(PORT, () => {
     console.log(`Connected to port:${PORT}`);

@@ -118,8 +118,6 @@ exports.getSchedulesByConversation = async (req, res) => {
         console.log(req.params.conversationUID,'wawa');
         conversationUID = req.params.conversationUID
         const find = await schedulesModel.find({"conversationUID":conversationUID})
-
-        console.log(find,'outpoo');
         res.status(200).json({success:true, message:find})
 
 

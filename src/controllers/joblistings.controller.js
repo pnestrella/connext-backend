@@ -145,34 +145,70 @@ exports.postJobs = async (req, res) => {
 };
 
 //Getting a single job posting that the employers have
+async function getJobFunction(jobUID) {
+  if (!jobUID) throw new Error("Missing jobUID");
+
+  const results = await joblistingsModel.aggregate([
+    {
+      $match: {
+        jobUID: {
+          $in: Array.isArray(jobUID) ? jobUID : [jobUID]
+        }
+      }
+    },
+    {
+      $project: {
+        jobTitleVector: 0
+      }
+    },
+    {
+      $lookup: {
+        from: "employers",            // your employer collection name
+        let: { employerUID: "$employerUID" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$employerUID", "$$employerUID"] } } },
+          { $project: {
+              _id: 1,
+              employerUID: 1,
+              email: 1,
+              companyName: 1,
+              profilePic: 1,
+              location: 1
+            }
+          }
+        ],
+        as: "employerInfo"
+      }
+    },
+    { $unwind: { path: "$employerInfo", preserveNullAndEmptyArrays: true } }
+  ]);
+
+  return results[0] || null;
+}
+
+
+exports.getJobFunction = getJobFunction;
+
 exports.getJob = async (req, res) => {
     const {
         jobUID
-    } = req.query
-
+    } = req.query;
     console.log(jobUID);
+
     try {
-        const response = await joblistingsModel.findOne({
-            "jobUID": {
-                '$in': jobUID
-            }
-        }, {
-            jobTitleVector: 0
-        });
+        const job = await getJobFunction(jobUID);
 
         res.status(200).json({
             success: true,
-            message: response
-        })
-
+            message: job,
+        });
     } catch (err) {
         res.status(400).json({
             success: false,
-            message: err
-        })
+            message: err.message || err,
+        });
     }
-
-}
+};
 
 //Getting all of the job postings that the employers have
 exports.getJobs = async (req, res) => {

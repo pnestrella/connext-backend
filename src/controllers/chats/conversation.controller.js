@@ -1,6 +1,6 @@
 const conversationModel = require("../../models/chats/conversation.model");
 const Conversation = require("../../models/chats/conversation.model")
-const Message = require("../../models/chats/message.model")
+const Message = require("../../models/chats/message.model");
 
 // Create or get conversation between employer & seeker
 exports.createConversation = async (req, res) => {
@@ -47,6 +47,89 @@ exports.createConversation = async (req, res) => {
 
 
 // Get all conversations for a user
+  //reusable function
+async function getUserConversationsFunction(userUID) {
+  if (!userUID) {
+    throw new Error("Missing userUID parameter");
+  }
+
+  const pipeline = [
+    {
+      $match: {
+        $or: [{ employerUID: userUID }, { seekerUID: userUID }],
+      },
+    },
+    {
+      $lookup: {
+        from: "job_seekers",
+        localField: "seekerUID",
+        foreignField: "seekerUID",
+        as: "seeker",
+      },
+    },
+    {
+      $unwind: { path: "$seeker", preserveNullAndEmptyArrays: true },
+    },
+    {
+      $lookup: {
+        from: "employers",
+        localField: "employerUID",
+        foreignField: "employerUID",
+        as: "employer",
+      },
+    },
+    {
+      $unwind: { path: "$employer", preserveNullAndEmptyArrays: true },
+    },
+    {
+      $lookup: {
+        from: "applications",
+        localField: "applicationID",
+        foreignField: "applicationID",
+        as: "application",
+      },
+    },
+    {
+      $unwind: { path: "$application", preserveNullAndEmptyArrays: true },
+    },
+    {
+      $lookup: {
+        from: "job_listings",
+        localField: "application.jobUID",
+        foreignField: "jobUID",
+        as: "job",
+      },
+    },
+    {
+      $unwind: { path: "$job", preserveNullAndEmptyArrays: true },
+    },
+    {
+      $project: {
+        conversationUID: 1,
+        applicationID: 1,
+        status: 1,
+        lastMessage: 1,
+        updatedAt: 1,
+        seekerName: "$seeker.fullName",
+        employerUID: "$employer.employerUID",
+        seekerUID: "$seeker.seekerUID",
+        employerProfilePic: "$employer.profilePic",
+        employerName: "$employer.companyName",
+        applicationStatus: "$application.status",
+        jobUID: "$application.jobUID",
+        jobTitle: "$job.jobTitle",
+      },
+    },
+    {
+      $sort: { updatedAt: -1 },
+    },
+  ];
+
+  return await Conversation.aggregate(pipeline);
+}
+exports.getUserConversationsFunction = getUserConversationsFunction;
+
+
 exports.getUserConversations = async (req, res) => {
   try {
     const { userUID } = req.params;
