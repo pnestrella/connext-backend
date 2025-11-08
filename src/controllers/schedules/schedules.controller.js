@@ -7,14 +7,14 @@ const schedulesModel = require("../../models/schedules/schedules.model");
 
 // Reusable function for creating schedules
 async function createScheduleFunction(scheduleFields) {
-    try {
-        const newSchedule = new schedulesModel(scheduleFields);
-        const savedSchedule = await newSchedule.save();
-        console.log("Successfully saved the schedule: ", savedSchedule);
-        return savedSchedule;
-    } catch (error) {
-        throw new Error(error);
-    }
+  try {
+    const newSchedule = new schedulesModel(scheduleFields);
+    const savedSchedule = await newSchedule.save();
+    console.log("Successfully saved the schedule: ", savedSchedule);
+    return savedSchedule;
+  } catch (error) {
+    throw new Error(error);
+  }
 }
 
 exports.createScheduleService = createScheduleFunction;
@@ -23,35 +23,37 @@ exports.createScheduleService = createScheduleFunction;
 
 // Endpoint for creating schedules
 exports.createSchedule = async (req, res) => {
-    try {
-        console.log("schedule created", req.body);
-        const savedSchedule = await createScheduleFunction(req.body);
-        res.status(200).json({
-            success: true,
-            message: 'Schedule created',
-            data: savedSchedule
-        });
-    } catch (err) {
-        res.status(400).json({
-            success: false,
-            error: err.message || err
-        });
-    }
+  try {
+    console.log("schedule created", req.body);
+    const savedSchedule = await createScheduleFunction(req.body);
+    res.status(200).json({
+      success: true,
+      message: 'Schedule created',
+      data: savedSchedule
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: err.message || err
+    });
+  }
 };
 
 
 //editing schedule
-  //reusable editing schedule
+//reusable editing schedule
 async function updateScheduleFunction(meetingUID, updates) {
   try {
     console.log("🔧 Updating schedule by meetingUID:", meetingUID, updates);
 
     // Find the schedule by meetingUID and update it
-    const updatedSchedule = await schedulesModel.findOneAndUpdate(
-      { meetingUID: meetingUID },
-      { $set: updates },
-      { new: true }
-    );
+    const updatedSchedule = await schedulesModel.findOneAndUpdate({
+      meetingUID: meetingUID
+    }, {
+      $set: updates
+    }, {
+      new: true
+    });
 
     if (!updatedSchedule) {
       throw new Error('Schedule not found');
@@ -76,32 +78,38 @@ exports.updateScheduleFunction = updateScheduleFunction;
 
 exports.updateSchedule = async (req, res) => {
   try {
-    const { id } = req.params; // The schedule _id (MongoDB ID)
-    const updates = req.body;  // Fields to update
+    const {
+      meetingUID
+    } = req.params; // e.g. "90e3b071-3c48-41c9-ba22-3a32fd49d208"
+    const updates = req.body;
 
-    console.log("Updating schedule:", id, updates);
+    console.log("Updating schedule:", meetingUID, updates);
 
-    // ✅ Find and update (only the provided fields)
-    const updatedSchedule = await schedulesModel.findByIdAndUpdate(
-      id,
-      { $set: updates },
-      { new: true } // returns the updated document
+    // ✅ Correct usage: wrap meetingUID in an object
+    const updatedSchedule = await schedulesModel.findOneAndUpdate({
+        meetingUID: meetingUID
+      }, // filter object
+      {
+        $set: updates
+      }, {
+        new: true
+      }
     );
 
     if (!updatedSchedule) {
       return res.status(404).json({
         success: false,
-        message: 'Schedule not found',
+        message: "Schedule not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Schedule updated successfully',
+      message: "Schedule updated successfully",
       data: updatedSchedule,
     });
   } catch (err) {
-    console.error('Error updating schedule:', err);
+    console.error("Error updating schedule:", err);
     res.status(400).json({
       success: false,
       error: err.message || err,
@@ -111,23 +119,27 @@ exports.updateSchedule = async (req, res) => {
 
 
 
+
 //getting schedules by conversations
 exports.getSchedulesByConversation = async (req, res) => {
-    try {
-        console.log("Meow");
-        console.log(req.params.conversationUID,'wawa');
-        conversationUID = req.params.conversationUID
-        const find = await schedulesModel.find({"conversationUID":conversationUID})
-        res.status(200).json({success:true, message:find})
+  try {
+    console.log("Meow");
+    console.log(req.params.conversationUID, 'wawa');
+    conversationUID = req.params.conversationUID
+    const find = await schedulesModel.find({
+      "conversationUID": conversationUID
+    })
+    res.status(200).json({
+      success: true,
+      message: find
+    })
 
 
-    } catch (err) {
-        res.status(400).json({
-            success: false,
-            error: err.message || err
-        });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: err.message || err
+    });
 
-    }
+  }
 }
-
-

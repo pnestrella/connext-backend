@@ -4,10 +4,16 @@ const {
 const {
   nanoid
 } = require('nanoid');
-const { createNotificationFunction } = require('../notifications.controller');
+const {
+  createNotificationFunction
+} = require('../notifications.controller');
 
-const {getJobFunction} = require('../joblistings.controller');
-const { getIO } = require('../../sockets/chat.socket');
+const {
+  getJobFunction
+} = require('../joblistings.controller');
+const {
+  getIO
+} = require('../../sockets/chat.socket');
 
 //for notifications dynamic autogenerating title
 function generateNotificationTitle(status, employerName, jobTitle) {
@@ -30,19 +36,12 @@ function generateNotificationTitle(status, employerName, jobTitle) {
 }
 
 
-
-exports.updateApplications = async (req, res) => {
-  const {
-    applicationID,
-    status
-  } = req.body;
-
-  let statusCleaned = status.trim()
-  let applicationIDCleaned = applicationID.trim()
-
-  console.log(applicationID, status);
-
+//function for updating application
+async function updateApplicationFunction(applicationID, status) {
   try {
+    const applicationIDCleaned = applicationID.trim();
+    const statusCleaned = status.trim();
+
     const result = await applicationsModel.findByIdAndUpdate(
       applicationIDCleaned, {
         $set: {
@@ -53,17 +52,15 @@ exports.updateApplications = async (req, res) => {
       }
     );
 
+    if (!result) throw new Error("Application not found");
 
-    console.log(result, "resss");
-
-    const job = await getJobFunction(result.jobUID)
-    // console.log(job, "jobbb");
+    const job = await getJobFunction(result.jobUID);
 
     const title = generateNotificationTitle(
       result.status,
       job.employerInfo.companyName,
       job.jobTitle
-    )
+    );
 
     const notifPayload = {
       receiverUID: result.seekerUID,
@@ -72,35 +69,58 @@ exports.updateApplications = async (req, res) => {
       message: `Your application status for "${job.jobTitle}" is now "${result.status}".`,
       type: `application_${result.status}`,
       data: {
-        applicationID:result.applicationID
+        applicationID: result.applicationID,
       },
       receiverRole: "jobseeker",
     };
 
-    console.log('notifpayload', notifPayload);
-
-    //getting the io 
     const io = getIO();
-
     const notif = await createNotificationFunction({
       ...notifPayload,
       io
     });
-    console.log(notif, "notiffffff");
+
+    return {
+      success: true,
+      result,
+      notif
+    };
+  } catch (err) {
+    console.error("❌ Error in updateApplicationFunction:", err);
+    return {
+      success: false,
+      error: err.message
+    };
+  }
+}
+
+exports.updateApplicationFunction = updateApplicationFunction;
+
+exports.updateApplications = async (req, res) => {
+  const { applicationID, status } = req.body;
+
+  try {
+    const output = await updateApplicationFunction(applicationID, status);
+
+    if (!output.success) {
+      return res.status(500).json({
+        success: false,
+        error: output.error,
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: result
-    })
-
+      message: output.result,
+    });
   } catch (err) {
-    console.error("❌ Error creating application:", err);
+    console.error("❌ Error in updateApplications controller:", err);
     res.status(500).json({
       success: false,
-      error: err.message
+      error: err.message,
     });
   }
-}
+};
 
 
 exports.createApplication = async (req, res) => {

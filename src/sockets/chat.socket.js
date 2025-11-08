@@ -4,9 +4,14 @@ const Message = require("../models/chats/message.model");
 const {
   employersModel
 } = require("../models/employers/employers.model");
+
+//for cteaing notification
 const {
   createNotificationFunction
 } = require("../controllers/notifications.controller");
+
+
+
 
 // --- Socket Utilities --- //
 function addUserSocket(userId, socketId) {
@@ -98,6 +103,16 @@ function chatSocket(io) {
 
         // Unlock if employer sends first
         if (conversation.status === "locked" && senderUID === conversation.employerUID) {
+          //getting the application to update it imports lazy loading
+          const {
+            updateApplicationFunction
+          } = require("../controllers/jobseekers/applications.controller");
+
+
+          //update the application's status to contacted by the employer
+          await updateApplicationFunction(conversation.applicationID, "contacted")
+
+          //notifications that the employer sents a message to JOBSEEKER
           const notifPayload = {
             receiverUID: conversation.seekerUID,
             senderUID: conversation.employerUID,
@@ -161,8 +176,8 @@ function chatSocket(io) {
 
 // --- Export Everything You Need --- //
 module.exports = {
-  chatSocket, 
-  emitToUser, 
+  chatSocket,
+  emitToUser,
   getIO,
-  userSockets, 
+  userSockets,
 };

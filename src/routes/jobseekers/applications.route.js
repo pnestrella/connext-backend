@@ -21,7 +21,6 @@ route.get('/getApplicantCounts', controller.getApplicantCounts)
 route.post('/createApplication', controller.createApplication)
 
     //patch request
-
 route.patch('/updateApplications', controller.updateApplications)
 
 module.exports = route
