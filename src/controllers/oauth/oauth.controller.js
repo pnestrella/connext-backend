@@ -80,18 +80,19 @@ exports.googleCallback = [
     try {
       const state = JSON.parse(decodeURIComponent(req.query.state));
 
+      console.log('STATEE', state)
+
       const token = req.user.accessToken;
       const refreshToken = req.user.refreshToken;
       const redirectUri = state.redirectUri; // your app deep link
       const userUID = state.userUID
 
-      // ✅ Store the tokens securely in DB
       // await saveGoogleTokensToUser(req.user.id, { token, refreshToken });
 
       const updatedUser = await handleUpdateProfile(userUID, {
         oauth: {
-          accessToken: encrypt(token),
-          refreshToken: encrypt(refreshToken),
+          accessToken: token,
+          refreshToken: refreshToken,
           accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000),
           refreshTokenExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000),
         }
@@ -134,7 +135,7 @@ async function refreshAccessToken(refreshToken) {
     console.log('Expires in (seconds):', credentials.expiry_date);
     return credentials;
   } catch (err) {
-    console.error('❌ Failed to refresh access token:', err.mess);
+    console.error('❌ Failed to refresh access token:', err);
 
     // Re-throw the original error with its message
     throw new Error(err.message || 'Unexpected error while refreshing access token');
@@ -155,8 +156,8 @@ exports.createMeeting = async (req, res) => {
 
   let employer = await findEmployerByEmail('connext.devs@gmail.com');
   employer = employer[0]
-  let accessToken = decrypt(employer.oauth.accessToken)
-  let refreshToken = decrypt(employer.oauth.refreshToken)
+  let accessToken = employer.oauth.accessToken
+  let refreshToken = employer.oauth.refreshToken
   const atExp = employer.oauth.accessTokenExpiresAt
   const rtExp = employer.oauth.refreshTokenExpiresAt;
 
@@ -166,7 +167,8 @@ exports.createMeeting = async (req, res) => {
 
   //if ACCESS TOKEN is expired automatically get one
   try {
-    if (new Date() >= new Date(atExp)) {
+    // if (new Date() >= new Date(atExp)) {
+    if(true){
       console.log('Access token expired — refreshing...');
       const credentials = await refreshAccessToken(refreshToken);
       console.log('Access token refreshed automatically.');
@@ -176,7 +178,7 @@ exports.createMeeting = async (req, res) => {
       const updatedUser = await handleUpdateProfile(employer.employerUID, {
         oauth: {
           refreshToken: employer.oauth.refreshToken,
-          accessToken: encrypt(accessToken),
+          accessToken: accessToken,
           refreshTokenExpiresAt: employer.oauth.refreshTokenExpiresAt,
           accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000),
         }
@@ -277,8 +279,8 @@ exports.updateSchedule = async (req, res) => {
 
   let employer = await findEmployerByEmail('connext.devs@gmail.com');
   employer = employer[0];
-  let accessToken = decrypt(employer.oauth.accessToken);
-  let refreshToken = decrypt(employer.oauth.refreshToken);
+  let accessToken = employer.oauth.accessToken;
+  let refreshToken = employer.oauth.refreshToken;
   const atExp = employer.oauth.accessTokenExpiresAt;
 
   try {
@@ -290,7 +292,7 @@ exports.updateSchedule = async (req, res) => {
       await handleUpdateProfile(employer.employerUID, {
         oauth: {
           ...employer.oauth,
-          accessToken: encrypt(accessToken),
+          accessToken: accessToken,
           accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000)
         },
       });
